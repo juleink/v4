@@ -1,6 +1,7 @@
 
 import streamlit as st
 import pandas as pd
+import fitz
 
 st.set_page_config(page_title="KI-Lernplan Empfehlung", layout="centered")
 
@@ -8,25 +9,42 @@ st.set_page_config(page_title="KI-Lernplan Empfehlung", layout="centered")
 if "page" not in st.session_state:
     st.session_state.page = "upload"
 
-st.title("🎓 KI-gestützte Lernplan-Empfehlung")
+st.title("Erstelle deinen individuellen Lernplan auf Basis deiner Modulplans und deiner Persönlichen Interessen mit snackable!")
 
 # ------------------------ Seite 1: Upload ------------------------
 if st.session_state.page == "upload":
-    st.subheader("📂 Schritt 1: Lade deine Excel-Datei hoch")
-    uploaded_file = st.file_uploader("Wähle deine .xlsx-Datei", type="xlsx")
+    st.subheader("📂 Schritt 1: Lade deinen Modulplan als pdf hoch")
+    uploaded_file = st.file_uploader("Wähle deine .pdf-Datei", type="pdf")
+
+    uploaded_file = st.file_uploader("Wähle deine PDF-Datei", type="pdf")
 
     if uploaded_file:
         try:
-            st.session_state.df_modules = pd.read_excel(uploaded_file, sheet_name="Module", engine="openpyxl")
-            st.session_state.df_keywords = pd.read_excel(uploaded_file, sheet_name="Keywords", engine="openpyxl")
+            # PDF-Inhalt extrahieren
+            with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+                text = "\n".join([page.get_text() for page in doc])
 
-            st.success("Datei erfolgreich geladen ✅")
+            # Platzhalter-DataFrames simulieren
+            st.session_state.df_modules = pd.DataFrame({
+                "Modulname": ["Erkannter Modultext"],
+                "Semester": [3],
+                "Beschreibung": [text[:500]]  # zeige nur einen Ausschnitt
+            })
+
+            st.session_state.df_keywords = pd.DataFrame({
+                "Clustername": ["Thermodynamik", "Supply Chain Management"],
+                "Keyword": ["thermisch", "logistik"]
+            })
+
+            st.success("PDF erfolgreich ausgelesen ✅")
             st.dataframe(st.session_state.df_modules)
             if st.button("➡️ Weiter zu Semesterwahl"):
                 st.session_state.page = "semester"
 
         except Exception as e:
-            st.error(f"Fehler beim Einlesen der Datei: {e}")
+            st.error(f"Fehler beim Einlesen der PDF-Datei: {e}")
+
+
 
 # ------------------------ Seite 2: Semesterwahl ------------------------
 elif st.session_state.page == "semester":
