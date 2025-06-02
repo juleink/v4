@@ -62,6 +62,7 @@ elif st.session_state.page == "semester":
             st.session_state.page = "upload"
 
 # ------------------------ Seite 3: Lernpläne ------------------------
+# ------------------------ Seite 3: Lernpläne ------------------------
 elif st.session_state.page == "lernplaene":
     st.subheader("🧠 Schritt 3: Deine automatisch erkannten Lernpläne")
 
@@ -70,6 +71,16 @@ elif st.session_state.page == "lernplaene":
     semester = st.session_state.selected_semester
 
     semester_modules = df_modules[df_modules["Semester"] == semester]
+
+    # Nutzer kann hier eigene Interessen/Schlagwörter eingeben
+    user_keywords = st.text_input("✨ Hast du persönliche Interessen oder Wunschthemen? (Komma-getrennt)", "")
+    additional_clusters = []
+    if user_keywords:
+        for word in [w.strip().lower() for w in user_keywords.split(",")]:
+            additional_clusters.append({"Clustername": word.title(), "Keyword": word.lower()})
+
+    # Kombiniere alle Keywords (aus Datei + Nutzerinput)
+    full_keywords_df = pd.concat([df_keywords, pd.DataFrame(additional_clusters)], ignore_index=True)
 
     if semester_modules.empty:
         st.warning("⚠️ Keine Module für dieses Semester gefunden.")
@@ -82,7 +93,7 @@ elif st.session_state.page == "lernplaene":
             modulname = row["Modulname"]
             passende_cluster = set()
 
-            for _, k in df_keywords.iterrows():
+            for _, k in full_keywords_df.iterrows():
                 keyword = str(k["Keyword"]).lower()
                 cluster = k["Clustername"]
 
@@ -91,7 +102,7 @@ elif st.session_state.page == "lernplaene":
 
             if passende_cluster:
                 st.markdown(f"### 📘 **{modulname}**")
-                st.markdown(f"**Erkannte Themen-Cluster:** {', '.join(passende_cluster)}")
+                st.markdown(f"**Themen-Cluster (inkl. Interessen):** {', '.join(passende_cluster)}")
 
                 if st.button(f"📌 Zu Lernplan hinzufügen – {modulname}"):
                     st.session_state.lernplan.append({
@@ -107,6 +118,7 @@ elif st.session_state.page == "lernplaene":
 
     if st.button("🔙 Zurück zur Semesterwahl"):
         st.session_state.page = "semester"
+
 
 # ------------------------ Seite 4: Dashboard ------------------------
 elif st.session_state.page == "dashboard":
